@@ -1,0 +1,6 @@
+g;graph;name:string,timestamp:long
+v;buyer;name:string
+v;seller;name:string
+v;car;brand:string,model:string,year:int
+e;buys;transaction_amount:double,timestamp:long
+e;auctions;listing_price:double,timestamp:long

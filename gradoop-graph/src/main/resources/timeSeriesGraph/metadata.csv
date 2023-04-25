@@ -1,0 +1,6 @@
+g;graph;name:string
+v;person;__valFrom:long,name:string
+v;car;__valFrom:long,brand:string
+e;owns;__valFrom:long,__valTo:long
+e;buys;__valAt:long
+e;sells;__valAt:long

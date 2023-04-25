@@ -1,0 +1,21 @@
+假设我们发现一个频繁子图模式，其中包含以下关系：
+
+用户A与用户B是好友关系。
+用户B与用户C是同事关系。
+用户C与用户D是家庭关系。
+用户D与用户A是好友关系。
+这个频繁子图表明，在社交网络中，存在一个常见的模式，即用户通过不同类型的关系互相连接。这种模式可能反映了现实生活中人们的社交习惯：人们可能在工作场合结识新朋友（用户B和用户C），然后通过这些新朋友结识他们的家人（用户C和用户D），最终将这些家人也变成自己的好友（用户A和用户D）。
+
+Suppose we find a frequent subgraph pattern containing the following relationships:
+
+User A is in a friend relationship with User B.
+User B is in a colleague relationship with User C.
+User C is in a family relationship with User D.
+User D is in a friend relationship with User A.
+
+This frequent subgraph suggests that there is a common pattern in social networks where users are connected to each other through different types of relationships. This pattern may reflect the social habits of people in real life: people may make new friends at work (User B and User C), then meet their families through these new friends (User C and User D), and eventually make these families their friends as well (User A and User D).
+
+Translated with www.DeepL.com/Translator (free version)
+
+
+--------》People who may know

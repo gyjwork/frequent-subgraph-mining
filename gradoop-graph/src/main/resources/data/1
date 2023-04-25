@@ -1,0 +1,34 @@
+DIMSpan是一种用于发现动态图模式的算法。在DIMSpan中，模式是由一系列节点和边缘组成的，其中节点和边缘都具有时间戳。例如，模式可以表示为“在时间t1存在节点a，在时间t2存在节点b，以及在时间t3存在一条从a到b的边缘”。
+
+如果要将原始模式（a）->（b）（只有一条边连接两个节点）放宽为通用路径，则可以使用以下方法：
+
+将原始模式中的单个边缘替换为一条路径，其中包含多个节点和边缘，这条路径从起始节点a开始，经过一些节点和边缘，最终到达目标节点b。
+
+在新的路径上，将节点和边缘添加到原始模式中以保持其语义。例如，如果原始模式包含节点属性，那么新路径上的节点应该具有相同的属性。如果原始模式中的边缘具有权重，那么新路径上的边缘应该具有相同的权重。
+
+将新的路径与DIMSpan算法集成，以便可以发现符合该路径的模式。这样，就可以在动态图中发现通用的路径模式，而不仅仅是单条边缘连接的模式。
+
+综上所述，要将原始模式（a）->（b）放宽为通用路径，需要将单个边缘替换为一条包含多个节点和边缘的路径，并将其添加到原始模式中以保持其语义。然后，将新的路径与DIMSpan算法集成，以便可以发现符合该路径的模式。
+
+
+1、定义图数据结构和一般路径模式数据结构：这一步的目的是为图数据和路径模式创建合适的数据结构，以便于存储和操作。通常，可以使用邻接表或邻接矩阵来表示图数据。一般路径模式可以使用包含节点和边列表的自定义数据结构来表示。
+
+2、生成频繁的一般路径模式：这一步的目的是遍历图数据中的所有可能路径，并找出支持度大于等于阈值的一般路径模式。支持度是一个度量，用于表示路径模式在图数据中的出现频率。一个较高的支持度表明该路径模式在数据集中较为常见。支持度计算公式为：支持度 = 路径模式出现次数 / 总节点数。通过设置一个支持度阈值，我们可以筛选出在整个数据集中出现较为频繁的路径模式。
+
+3、深度优先搜索 (DFS) 遍历所有路径：为了找出所有可能的一般路径模式，我们需要遍历图数据中的所有路径。在这一步中，我们使用深度优先搜索（DFS）算法来遍历所有可能的路径。DFS 是一种常用的图遍历算法，它从一个节点开始，沿着边访问尽可能深的节点，然后回溯，直到遍历所有未访问过的节点。在遍历过程中，我们可以动态构建一般路径模式，并计算其支持度。
+
+4、计算一般路径模式的支持度：在遍历过程中，我们需要计算每个路径模式的支持度。计算支持度的方法可以根据具体需求进行调整，例如计算路径出现的次数或使用其他度量方法。支持度有助于我们了解路径模式在整个数据集中的重要性和频繁程度。
+
+5、筛选频繁的一般路径模式：当我们找到一个一般路径模式的支持度大于等于阈值时，我们认为这个路径模式是频繁的。我们将这些频繁的一般路径模式存储在一个列表中，并在算法结束时返回。这些频繁的一般路径模式可以帮助我们了解图数据中的重要模式和结构。
+
+1、Define the graph data structure and the general path pattern data structure: The purpose of this step is to create suitable data structures for the graph data and the path pattern for easy storage and manipulation. Typically, graph data can be represented using an adjacency table or an adjacency matrix. General path patterns can be represented using a custom data structure containing a list of nodes and edges.
+
+2、Generate frequent general path patterns: The aim of this step is to traverse all possible paths in the graph data and find general path patterns with a support greater than or equal to a threshold value. Support is a metric that indicates how often a path pattern occurs in the graph data. A high support indicates that the path pattern is more common in the dataset. Support is calculated as: Support = number of occurrences of path pattern / total number of nodes. By setting a support threshold, we can filter out the path patterns that occur more frequently throughout the dataset.
+
+3、Depth-first search (DFS) traverses all paths: In order to find all possible general path patterns, we need to traverse all paths in the graph data. In this step, we traverse all possible paths using the Depth First Search (DFS) algorithm, a common graph traversal algorithm that starts at a node, visits as deep as possible along an edge, and then backtracks until all unvisited nodes have been traversed. During the traversal, we can dynamically construct general path patterns and calculate their support.
+
+4、Calculating the support of general path patterns: During the traversal, we need to calculate the support of each path pattern. The method of calculating support can be adapted to suit specific needs, for example by counting the number of occurrences of a path or by using other metrics. The support helps us to understand the importance and frequency of path patterns across the dataset.
+
+5、Filtering for frequent general path patterns: We consider a general path pattern to be frequent when we find a general path pattern with a support greater than or equal to a threshold value. We store these frequent general path patterns in a list and return them at the end of the algorithm. These frequent general path patterns can help us to understand important patterns and structures in the graph data.
+
+
