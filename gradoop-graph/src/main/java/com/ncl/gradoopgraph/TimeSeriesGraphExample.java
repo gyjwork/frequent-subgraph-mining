@@ -22,26 +22,25 @@ import java.util.*;
 public class TimeSeriesGraphExample {
 
     public static void main(String[] args) throws Exception {
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
-
-        String inputPath = new ClassPathResource("timeSeriesGraph").getFile().getAbsolutePath();
-        CSVDataSource dataSource = new CSVDataSource(inputPath, config);
-
-        LogicalGraph logicalGraph = dataSource.getLogicalGraph();
-        logicalGraph.print();
-        logicalGraph.getGraphHead().print();
-        logicalGraph.getVertices().print();
-        logicalGraph.getEdges().print();
-
+//        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+//        GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
+//
+//        //String inputPath = new ClassPathResource("timeSeriesGraph").getFile().getAbsolutePath();
+//        String inputPath = new ClassPathResource("timeSeriesGraph-20230427").getFile().getAbsolutePath();
+//        CSVDataSource dataSource = new CSVDataSource(inputPath, config);
+//
+//        LogicalGraph logicalGraph = dataSource.getLogicalGraph();
+//        logicalGraph.print();
 
         // Convert the original graph to a time series graph
+        /**
         LogicalGraph timeSeriesGraph = convertToTimeSeries(logicalGraph);
 
         timeSeriesGraph.getGraphHead().print();
         timeSeriesGraph.getVertices().print();
         timeSeriesGraph.getEdges().print();
         timeSeriesGraph.print();
+         */
 
     }
 
