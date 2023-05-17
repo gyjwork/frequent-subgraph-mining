@@ -2,18 +2,23 @@ package com.ncl.gradoopgraph;
 
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.DataSet;
+import org.gradoop.common.model.impl.pojo.EPGMEdge;
+import org.gradoop.common.model.impl.pojo.EPGMGraphHead;
+import org.gradoop.common.model.impl.pojo.EPGMVertex;
 import org.gradoop.flink.algorithms.fsm.dimspan.DIMSpan;
 import org.gradoop.flink.algorithms.fsm.dimspan.config.DIMSpanConfig;
 import org.gradoop.flink.algorithms.fsm.dimspan.functions.conversion.EPGMGraphTransactionToLabeledGraph;
 import org.gradoop.flink.algorithms.fsm.dimspan.tuples.LabeledGraphStringString;
 import org.gradoop.flink.io.impl.csv.CSVDataSource;
 import org.gradoop.flink.model.impl.epgm.GraphCollection;
+import org.gradoop.flink.model.impl.epgm.LogicalGraph;
 import org.gradoop.flink.model.impl.layouts.transactional.tuples.GraphTransaction;
 import org.gradoop.flink.util.GradoopFlinkConfig;
 import org.gradoop.flink.io.api.DataSource;
 import org.springframework.core.io.ClassPathResource;
 
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -50,6 +55,19 @@ public class GradoopDIMSpanExample {
         // Load diagram data from CSV file
         DataSource dataSource = new CSVDataSource(inputPath, config);
         GraphCollection graphCollection = dataSource.getGraphCollection();
+//        graphCollection.print();
+//
+//        DataSet<GraphTransaction> transactions = graphCollection.getGraphTransactions();
+//
+//        transactions.collect().forEach(transaction -> {
+//            // Do something with each transaction
+//            EPGMGraphHead graphHead = transaction.getGraphHead();
+//            Set<EPGMVertex> vertices = transaction.getVertices();
+//            Set<EPGMEdge> edges = transaction.getEdges();
+//            System.out.println("Graph Id: " + graphHead.getId());
+//            System.out.println("Vertices: " + vertices);
+//            System.out.println("Edges: " + edges);
+//        });
 
         // Set the DIMSpan algorithm parameters
         float minSupport = 0.5f;
