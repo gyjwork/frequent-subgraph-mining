@@ -1,14 +1,12 @@
 package com.ncl.gradoopgraph.BetweennessCentrality;
 
 import com.ncl.gradoopgraph.utils.GraphTransformer;
-import com.ncl.gradoopgraph.utils.GraphUtils;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
 import org.gradoop.common.model.impl.id.GradoopId;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
@@ -38,26 +36,23 @@ public class GraphSearcher {
      * @return
      * @throws Exception
      */
-    public DataSet<EPGMVertex> getNeighbors(LogicalGraph graph, GradoopId vertexId, boolean forwardSearch) throws Exception {
-        // Get the dataset of edges where the source or target matches the provided vertexId
-        DataSet<EPGMEdge> edges;
-        if (forwardSearch) {
-            edges = graph.getEdges().filter(new FilterFunction<EPGMEdge>() {
-                @Override
-                public boolean filter(EPGMEdge edge) {
-                    return edge.getSourceId().equals(vertexId);
+    public DataSet<EPGMVertex> getNeighbors(LogicalGraph graph, GradoopId vertexId, SearchType type) throws Exception {
+        DataSet<EPGMEdge> edges = graph.getEdges().filter(new FilterFunction<EPGMEdge>() {
+            @Override
+            public boolean filter(EPGMEdge edge) {
+                switch (type) {
+                    case OUTGOING:
+                        return edge.getSourceId().equals(vertexId);
+                    case INCOMING:
+                        return edge.getTargetId().equals(vertexId);
+                    case UNDIRECTED:
+                        return edge.getSourceId().equals(vertexId) || edge.getTargetId().equals(vertexId);
+                    default:
+                        throw new UnsupportedOperationException("Unsupported search type: " + type);
                 }
-            });
-        } else {
-            edges = graph.getEdges().filter(new FilterFunction<EPGMEdge>() {
-                @Override
-                public boolean filter(EPGMEdge edge) {
-                    return edge.getTargetId().equals(vertexId);
-                }
-            });
-        }
+            }
+        });
 
-        // Extract the IDs of the other vertices (i.e., the neighbors)
         DataSet<GradoopId> neighborIds = edges.flatMap(new FlatMapFunction<EPGMEdge, GradoopId>() {
             @Override
             public void flatMap(EPGMEdge edge, Collector<GradoopId> out) {
@@ -69,7 +64,6 @@ public class GraphSearcher {
             }
         });
 
-        // Map the IDs back to the actual vertex objects
         DataSet<EPGMVertex> neighbors = graph.getVertices().join(neighborIds)
                 .where(new KeySelector<EPGMVertex, GradoopId>() {
                     @Override
@@ -93,6 +87,7 @@ public class GraphSearcher {
         return neighbors;
     }
 
+
     /**
      * dfs方法是递归实现的。这个方法开始于一个顶点（起点），然后访问该顶点的所有邻居，如果邻居节点没有被访问过，就从那个节点继续深度搜索。
      * 在这个过程中，我们维护了一个访问过的顶点集合visited，避免重复访问。我们也维护一个路径列表path，记录当前路径。
@@ -104,42 +99,24 @@ public class GraphSearcher {
      * @param forwardSearch
      * @throws Exception
      */
-    public void dfs(LogicalGraph graph, GradoopId startVertexId, GradoopId vertexId, Set<GradoopId> visited, LinkedList<GradoopId> path, boolean forwardSearch) throws Exception {
+    public void dfs(LogicalGraph graph, GradoopId startVertexId, GradoopId vertexId, Set<GradoopId> visited, LinkedList<GradoopId> path, SearchType type) throws Exception {
         visited.add(vertexId);
         path.add(vertexId);
-
-        // Print the current path
         System.out.println("Current path: " + path);
 
-        DataSet<EPGMVertex> neighbors = getNeighbors(graph, vertexId, forwardSearch);
+        DataSet<EPGMVertex> neighbors = getNeighbors(graph, vertexId, type);
 
-        for(EPGMVertex neighbor : neighbors.collect()) {
+        for (EPGMVertex neighbor : neighbors.collect()) {
             GradoopId neighborId = neighbor.getId();
             if (!visited.contains(neighborId)) {
-                if (forwardSearch && neighborId.compareTo(startVertexId) > 0 || !forwardSearch && neighborId.compareTo(startVertexId) < 0) {
-                    dfs(graph, startVertexId, neighborId, visited, path, forwardSearch);
-                }
+                dfs(graph, startVertexId, neighborId, visited, path, type);
             }
         }
 
         path.remove(vertexId);
     }
 
-    /**
-     * search方法是深度优先搜索的启动方法。它初始化visited和path集合，并调用dfs方法开始搜索。
-     * 它也接收一个forwardSearch参数，决定搜索的方向（向前或向后）。
-     * @param graph
-     * @param startVertexId
-     * @param forwardSearch
-     * @throws Exception
-     */
-    public void search(LogicalGraph graph, GradoopId startVertexId, boolean forwardSearch) throws Exception {
-        Set<GradoopId> visited = new HashSet<>();
-        LinkedList<GradoopId> path = new LinkedList<>();
-        dfs(graph, startVertexId, startVertexId, visited, path, forwardSearch);
-    }
-
-    public void bfs(LogicalGraph graph, GradoopId startVertexId, boolean forwardSearch) throws Exception {
+    public void bfs(LogicalGraph graph, GradoopId startVertexId, SearchType type) throws Exception {
         Set<GradoopId> visited = new HashSet<>();
         Queue<GradoopId> queue = new LinkedList<>();
 
@@ -157,7 +134,7 @@ public class GraphSearcher {
             LinkedList<GradoopId> currentPath = paths.get(currentVertexId);
             System.out.println("Current path: " + currentPath);
 
-            DataSet<EPGMVertex> neighbors = getNeighbors(graph, currentVertexId, forwardSearch);
+            DataSet<EPGMVertex> neighbors = getNeighbors(graph, currentVertexId, type);
 
             for(EPGMVertex neighbor : neighbors.collect()) {
                 GradoopId neighborId = neighbor.getId();
@@ -173,10 +150,16 @@ public class GraphSearcher {
         }
     }
 
-
-    public void searchBFS(LogicalGraph graph, GradoopId startVertexId, boolean forwardSearch) throws Exception {
-        bfs(graph, startVertexId, forwardSearch);
+    public void searchDFS(LogicalGraph graph, GradoopId startVertexId, SearchType type) throws Exception {
+        Set<GradoopId> visited = new HashSet<>();
+        LinkedList<GradoopId> path = new LinkedList<>();
+        dfs(graph, startVertexId, startVertexId, visited, path, type);
     }
+
+    public void searchBFS(LogicalGraph graph, GradoopId startVertexId, SearchType type) throws Exception {
+        bfs(graph, startVertexId, type);
+    }
+
 
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -201,11 +184,22 @@ public class GraphSearcher {
         System.out.println("Vertex with the highest Betweenness Centrality: ID = " + highestScoreEntry.getKey() + ", Score = " + highestScoreEntry.getValue());
 
         GraphSearcher searcher = new GraphSearcher();
-        searcher.search(graph, highestScoreEntry.getKey(), true); // Forward DFS search
-        searcher.search(graph, highestScoreEntry.getKey(), false); // Backward DFS search
+        GradoopId startVertexId = highestScoreEntry.getKey();
+        // For DFS search
+        System.out.println("DFS - OUTGOING");
+        searcher.searchDFS(graph, startVertexId, SearchType.OUTGOING);
+        System.out.println("DFS - INCOMING");
+        searcher.searchDFS(graph, startVertexId, SearchType.INCOMING);
+        System.out.println("DFS - UNDIRECTED");
+        searcher.searchDFS(graph, startVertexId, SearchType.UNDIRECTED);
 
-        searcher.searchBFS(graph, highestScoreEntry.getKey(), true); // Forward BFS search
-        searcher.searchBFS(graph, highestScoreEntry.getKey(), false); // Backward BFS search
+        // For BFS search
+        System.out.println("BFS - OUTGOING");
+        searcher.searchBFS(graph, startVertexId, SearchType.OUTGOING);
+        System.out.println("BFS - INCOMING");
+        searcher.searchBFS(graph, startVertexId, SearchType.INCOMING);
+        System.out.println("BFS - UNDIRECTED");
+        searcher.searchBFS(graph, startVertexId, SearchType.UNDIRECTED);
     }
 }
 
