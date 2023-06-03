@@ -28,11 +28,11 @@ public class GraphTransformerTest {
 
         LogicalGraph inputGraph = dataSource.getLogicalGraph();
 
-        //inputGraph.print();
+        inputGraph.print();
 
         LogicalGraph transformedGraph = GraphTransformer.transformGraph(env,inputGraph);
 
-        //transformedGraph.print();
+        transformedGraph.print();
 
         GraphCollection graphCollection = GraphTransformer.splitGraphByChainId(env,transformedGraph);
 

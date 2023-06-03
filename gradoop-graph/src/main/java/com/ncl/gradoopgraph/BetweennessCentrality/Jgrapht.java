@@ -14,7 +14,7 @@ import org.jgrapht.graph.SimpleGraph;
  */
 public class Jgrapht {
     public static void main(String[] args) {
-        // 创建图
+        // Create a graph
         Graph<String, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
         graph.addVertex("A");
         graph.addVertex("B");
@@ -22,7 +22,6 @@ public class Jgrapht {
         graph.addEdge("A", "B");
         graph.addEdge("B", "C");
 
-        // 计算介数中心性
         BetweennessCentrality<String, DefaultEdge> betweennessCentrality = new BetweennessCentrality<>(graph);
         for (String vertex : graph.vertexSet()) {
             System.out.println("Betweenness centrality of " + vertex + " = " + betweennessCentrality.getVertexScore(vertex));

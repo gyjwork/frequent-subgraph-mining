@@ -28,7 +28,6 @@ public class BetweennessCalculator {
 
     private Graph<GradoopId, DefaultEdge> graph;
 
-
     public BetweennessCalculator(LogicalGraph logicalGraph) {
         // convert LogicalGraph to JGraphT Graph
         this.graph = convertLogicalGraphToJGraphT(logicalGraph);

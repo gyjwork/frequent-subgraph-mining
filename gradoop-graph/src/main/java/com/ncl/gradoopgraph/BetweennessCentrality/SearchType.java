@@ -8,6 +8,7 @@ package com.ncl.gradoopgraph.BetweennessCentrality;
  * @date 6/3/233:38 PM
  */
 public enum SearchType {
+
     OUTGOING,
     INCOMING,
     UNDIRECTED

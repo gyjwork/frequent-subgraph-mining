@@ -30,9 +30,10 @@ import java.util.*;
 public class GraphSearcher {
 
     /**
-     * getNeighbors方法返回给定顶点的邻居节点集合。它首先找到所有与给定顶点相连的边，然后从这些边中提取出邻居节点的ID，最后通过ID获取邻居节点。
+     * This method filters the edges based on the SearchType provided as input and collects the IDs of neighboring vertices
      * @param graph
      * @param vertexId
+     * @param type
      * @return
      * @throws Exception
      */
@@ -40,6 +41,7 @@ public class GraphSearcher {
         DataSet<EPGMEdge> edges = graph.getEdges().filter(new FilterFunction<EPGMEdge>() {
             @Override
             public boolean filter(EPGMEdge edge) {
+                // Depending on the search type, we filter the edges
                 switch (type) {
                     case OUTGOING:
                         return edge.getSourceId().equals(vertexId);
@@ -53,6 +55,7 @@ public class GraphSearcher {
             }
         });
 
+        // Mapping the edges to the corresponding neighbor vertex IDs
         DataSet<GradoopId> neighborIds = edges.flatMap(new FlatMapFunction<EPGMEdge, GradoopId>() {
             @Override
             public void flatMap(EPGMEdge edge, Collector<GradoopId> out) {
@@ -64,6 +67,7 @@ public class GraphSearcher {
             }
         });
 
+        // Joining with the vertices dataset to get the vertex data
         DataSet<EPGMVertex> neighbors = graph.getVertices().join(neighborIds)
                 .where(new KeySelector<EPGMVertex, GradoopId>() {
                     @Override
@@ -87,35 +91,41 @@ public class GraphSearcher {
         return neighbors;
     }
 
-
     /**
-     * dfs方法是递归实现的。这个方法开始于一个顶点（起点），然后访问该顶点的所有邻居，如果邻居节点没有被访问过，就从那个节点继续深度搜索。
-     * 在这个过程中，我们维护了一个访问过的顶点集合visited，避免重复访问。我们也维护一个路径列表path，记录当前路径。
+     * This method implements the DFS algorithm
      * @param graph
-     * @param startVertexId
      * @param vertexId
      * @param visited
      * @param path
-     * @param forwardSearch
+     * @param type
      * @throws Exception
      */
-    public void dfs(LogicalGraph graph, GradoopId startVertexId, GradoopId vertexId, Set<GradoopId> visited, LinkedList<GradoopId> path, SearchType type) throws Exception {
+    public void dfs(LogicalGraph graph, GradoopId vertexId, Set<GradoopId> visited, LinkedList<GradoopId> path, SearchType type) throws Exception {
         visited.add(vertexId);
         path.add(vertexId);
         System.out.println("Current path: " + path);
 
         DataSet<EPGMVertex> neighbors = getNeighbors(graph, vertexId, type);
 
+        // Iterating over all the neighbors of the current vertex
         for (EPGMVertex neighbor : neighbors.collect()) {
             GradoopId neighborId = neighbor.getId();
+            // If the neighbor has not been visited, we perform a DFS on that vertex
             if (!visited.contains(neighborId)) {
-                dfs(graph, startVertexId, neighborId, visited, path, type);
+                dfs(graph, neighborId, visited, path, type);
             }
         }
 
         path.remove(vertexId);
     }
 
+    /**
+     * This method implements the BFS algorithm
+     * @param graph
+     * @param startVertexId
+     * @param type
+     * @throws Exception
+     */
     public void bfs(LogicalGraph graph, GradoopId startVertexId, SearchType type) throws Exception {
         Set<GradoopId> visited = new HashSet<>();
         Queue<GradoopId> queue = new LinkedList<>();
@@ -128,6 +138,7 @@ public class GraphSearcher {
         visited.add(startVertexId);
         queue.add(startVertexId);
 
+        // While there are vertices in the queue
         while (!queue.isEmpty()) {
             GradoopId currentVertexId = queue.poll();
 
@@ -136,8 +147,10 @@ public class GraphSearcher {
 
             DataSet<EPGMVertex> neighbors = getNeighbors(graph, currentVertexId, type);
 
-            for(EPGMVertex neighbor : neighbors.collect()) {
+            // Iterating over all the neighbors of the current vertex
+            for (EPGMVertex neighbor : neighbors.collect()) {
                 GradoopId neighborId = neighbor.getId();
+                // If the neighbor has not been visited, we add it to the queue and the visited set
                 if (!visited.contains(neighborId)) {
                     visited.add(neighborId);
                     queue.add(neighborId);
@@ -153,13 +166,12 @@ public class GraphSearcher {
     public void searchDFS(LogicalGraph graph, GradoopId startVertexId, SearchType type) throws Exception {
         Set<GradoopId> visited = new HashSet<>();
         LinkedList<GradoopId> path = new LinkedList<>();
-        dfs(graph, startVertexId, startVertexId, visited, path, type);
+        dfs(graph, startVertexId, visited, path, type);
     }
 
     public void searchBFS(LogicalGraph graph, GradoopId startVertexId, SearchType type) throws Exception {
         bfs(graph, startVertexId, type);
     }
-
 
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -169,9 +181,7 @@ public class GraphSearcher {
         CSVDataSource dataSource = new CSVDataSource(inputPath, config);
 
         LogicalGraph inputGraph = dataSource.getLogicalGraph();
-        LogicalGraph graph = GraphTransformer.transformGraph(env,inputGraph);
-
-        //graph.getVertices().print();
+        LogicalGraph graph = GraphTransformer.transformGraph(env, inputGraph);
 
         BetweennessCalculator calculator = new BetweennessCalculator(graph);
         Map<GradoopId, Double> scores = calculator.calculateWithSmallGraph();
@@ -202,5 +212,6 @@ public class GraphSearcher {
         searcher.searchBFS(graph, startVertexId, SearchType.UNDIRECTED);
     }
 }
+
 
 
