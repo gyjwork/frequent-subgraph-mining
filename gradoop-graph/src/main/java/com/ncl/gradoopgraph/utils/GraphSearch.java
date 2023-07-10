@@ -1,5 +1,6 @@
 package com.ncl.gradoopgraph.utils;
 
+import com.ncl.gradoopgraph.loadData.TestData;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
@@ -32,7 +33,6 @@ public class GraphSearch {
         return null;
     }
 
-    /**
     public static void printAllPaths(LogicalGraph graph, DataSet<EPGMVertex> sortedVertices) throws Exception {
         Collection<EPGMVertex> vertices = sortedVertices.collect();
 
@@ -104,20 +104,61 @@ public class GraphSearch {
             System.out.println("Vertex " + entry.getKey() + " appears " + entry.getValue() + " times.");
         }
     }
-     */
 
-    public static void printAllPaths(LogicalGraph graph, DataSet<EPGMVertex> sortedVertices) throws Exception {
-        // 将DataSet转换为Java集合，便于操作
-        // Convert DataSet to a Java collection for easy manipulation
+//    public static void printAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> sortedVertices) throws Exception {
+//        // 将DataSet转换为Java集合，便于操作
+//        // Convert DataSet to a Java collection for easy manipulation
+//        Collection<EPGMVertex> vertices = sortedVertices.collect();
+//
+//        // 创建邻接列表和逆邻接列表
+//        // Create an adjacency list and an inverse adjacency list
+//        Map<GradoopId, List<GradoopId>> adjList = new HashMap<>();
+//        Map<GradoopId, List<GradoopId>> invAdjList = new HashMap<>();
+//
+//        // 遍历所有边，为邻接列表和逆邻接列表添加条目
+//        // Iterate over all edges and add entries to the adjacency list and the inverse adjacency list
+//        for (EPGMEdge edge : graph.getEdges().collect()) {
+//            GradoopId sourceId = edge.getSourceId();
+//            GradoopId targetId = edge.getTargetId();
+//            adjList.computeIfAbsent(sourceId, k -> new ArrayList<>()).add(targetId);
+//            invAdjList.computeIfAbsent(targetId, k -> new ArrayList<>()).add(sourceId);
+//        }
+//
+//        // 获取所有没有入边的顶点，作为搜索开始的顶点
+//        // Get all vertices that have no incoming edges, to be used as starting points for the search
+//        List<EPGMVertex> startingVertices = vertices.stream()
+//                .filter(vertex -> {
+//                    List<GradoopId> ls = invAdjList.get(vertex.getId());
+//                    return ls == null || ls.isEmpty();
+//                })
+//                .collect(Collectors.toList());
+//
+//        // 遍历所有可能的起始顶点
+//        // Iterate over all potential starting vertices
+//        for (EPGMVertex vertex : startingVertices) {
+//            // 对每个起始顶点，计算从该顶点出发的所有最短路径
+//            // For each starting vertex, compute all shortest paths starting from it
+//            Map<GradoopId, List<GradoopId>> shortestPaths = computeShortestPaths(vertex.getId(), new ArrayList<>(vertices), adjList);
+//
+//            // 打印所有的最短路径
+//            // Print all the shortest paths
+//            System.out.println("Shortest paths from vertex " + vertex.getId() + ":");
+//            for (Map.Entry<GradoopId, List<GradoopId>> entry : shortestPaths.entrySet()) {
+//                System.out.println("Path to vertex " + entry.getKey() + ":");
+//                for (GradoopId id : entry.getValue()) {
+//                    System.out.println(getVertexById(vertices, id));
+//                }
+//                System.out.println();
+//            }
+//        }
+//    }
+
+    public static void printAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> sortedVertices) throws Exception {
         Collection<EPGMVertex> vertices = sortedVertices.collect();
-
-        // 创建邻接列表和逆邻接列表
-        // Create an adjacency list and an inverse adjacency list
         Map<GradoopId, List<GradoopId>> adjList = new HashMap<>();
         Map<GradoopId, List<GradoopId>> invAdjList = new HashMap<>();
+        Map<String, Integer> labelFrequencies = new HashMap<>();
 
-        // 遍历所有边，为邻接列表和逆邻接列表添加条目
-        // Iterate over all edges and add entries to the adjacency list and the inverse adjacency list
         for (EPGMEdge edge : graph.getEdges().collect()) {
             GradoopId sourceId = edge.getSourceId();
             GradoopId targetId = edge.getTargetId();
@@ -125,8 +166,6 @@ public class GraphSearch {
             invAdjList.computeIfAbsent(targetId, k -> new ArrayList<>()).add(sourceId);
         }
 
-        // 获取所有没有入边的顶点，作为搜索开始的顶点
-        // Get all vertices that have no incoming edges, to be used as starting points for the search
         List<EPGMVertex> startingVertices = vertices.stream()
                 .filter(vertex -> {
                     List<GradoopId> ls = invAdjList.get(vertex.getId());
@@ -134,26 +173,32 @@ public class GraphSearch {
                 })
                 .collect(Collectors.toList());
 
-        // 遍历所有可能的起始顶点
-        // Iterate over all potential starting vertices
         for (EPGMVertex vertex : startingVertices) {
-            // 对每个起始顶点，计算从该顶点出发的所有最短路径
-            // For each starting vertex, compute all shortest paths starting from it
             Map<GradoopId, List<GradoopId>> shortestPaths = computeShortestPaths(vertex.getId(), new ArrayList<>(vertices), adjList);
 
-            // 打印所有的最短路径
-            // Print all the shortest paths
             System.out.println("Shortest paths from vertex " + vertex.getId() + ":");
             for (Map.Entry<GradoopId, List<GradoopId>> entry : shortestPaths.entrySet()) {
                 System.out.println("Path to vertex " + entry.getKey() + ":");
                 for (GradoopId id : entry.getValue()) {
-                    System.out.println(getVertexById(vertices, id));
+                    EPGMVertex currentVertex = getVertexById(vertices, id);
+                    System.out.println(currentVertex);
+                    labelFrequencies.put(currentVertex.getLabel(), labelFrequencies.getOrDefault(currentVertex.getLabel(), 0) + 1);
                 }
                 System.out.println();
             }
         }
+
+        printLabelFrequencies(labelFrequencies);
     }
 
+    public static void printLabelFrequencies(Map<String, Integer> labelFrequencies) {
+        System.out.println("Label frequencies:");
+        for (Map.Entry<String, Integer> entry : labelFrequencies.entrySet()) {
+            System.out.println("Label: " + entry.getKey() + ", Frequency: " + entry.getValue());
+        }
+    }
+
+// computeShortestPaths method goes here...
 
 
     public static void dfs(GradoopId currentId, List<GradoopId> currentPath, Map<GradoopId, List<GradoopId>> adjList, List<List<GradoopId>> allPaths, Set<GradoopId> visited) {
@@ -180,6 +225,7 @@ public class GraphSearch {
         currentPath.remove(currentId);
         visited.remove(currentId);
     }
+
 
     public static Map<GradoopId, List<GradoopId>> computeShortestPaths(GradoopId sourceId, List<EPGMVertex> sortedVertices, Map<GradoopId, List<GradoopId>> adjList) {
         // 初始化距离、前置节点和最短路径的映射
@@ -229,21 +275,17 @@ public class GraphSearch {
 
 
     public static void main(String[] args) throws Exception {
+
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        GradoopFlinkConfig config = GradoopFlinkConfig.createConfig(env);
 
-        String inputPath = new ClassPathResource("timeSeriesGraph-20230427").getFile().getAbsolutePath();
-        CSVDataSource dataSource = new CSVDataSource(inputPath, config);
-
-        LogicalGraph inputGraph = dataSource.getLogicalGraph();
-        LogicalGraph graph = GraphTransformer.transformGraph(env, inputGraph);
+        LogicalGraph graph = TestData.loadTestData(env);
 
         graph.print();
 
         DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
         topologicalSort.print();
 
-        printAllPaths(graph, topologicalSort);
+        printAllSimplePaths(graph, topologicalSort);
     }
 }
 
