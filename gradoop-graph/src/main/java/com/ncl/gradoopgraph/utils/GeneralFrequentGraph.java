@@ -1,7 +1,8 @@
 package com.ncl.gradoopgraph.utils;
 
+import com.ncl.gradoopgraph.Beans.GeneralFrequentPath;
 import com.ncl.gradoopgraph.Beans.SimplePath;
-import com.ncl.gradoopgraph.loadData.TestData;
+import javafx.util.Pair;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
@@ -14,12 +15,68 @@ import java.util.stream.Collectors;
 
 /**
  * @author gyj
- * @title: GraphSearch_v1
+ * @title: GeneralFrequentGraph
  * @projectName gradoop-graph
- * @description: TODO
- * @date 7/12/233:49 PM
+ * @description: final algorithm, search general frequent paths
+ * @date 7/17/23 3:21 PM
  */
-public class GraphSearch_v1 {
+public class GeneralFrequentGraph {
+
+    private final ExecutionEnvironment env;
+
+    public GeneralFrequentGraph(ExecutionEnvironment env) {
+        this.env = env;
+    }
+
+    public List<GeneralFrequentPath> miningAlgorithm(LogicalGraph graph, int minSupport) throws Exception {
+        // 1. Perform topological sort on the graph
+        DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
+        Collection<EPGMVertex> vertices = topologicalSort.collect();
+
+        // 2. Find all simple paths
+        Map<String, Map<GradoopId, Integer>> simplePaths = findAllSimplePaths(graph, topologicalSort);
+
+        // 3. 创建两个 Map 类型的变量，分别用来存储每个标签对应的顶点集合，以及每个顶点对应的路径集合
+        Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
+        Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
+
+        for (Map.Entry<String, Map<GradoopId, Integer>> entry : simplePaths.entrySet()) {
+            Map<GradoopId, Integer> path = entry.getValue();
+
+            for (GradoopId id : path.keySet()) {
+                EPGMVertex vertex = getVertexById(vertices, id);
+                Integer pathValue = path.get(id);
+
+                labelToVertices.computeIfAbsent(vertex.getLabel(), k -> new HashSet<>()).add(id);
+                vertexToPaths.computeIfAbsent(id, k -> new HashMap<>()).put(entry.getKey(), pathValue);
+            }
+        }
+
+        // 4. 提取所有的label
+        Set<String> labels = labelToVertices.keySet();
+        List<String[]> labelPairs = new ArrayList<>();
+
+        for (String label1 : labels) {
+            for (String label2 : labels) {
+                if (!label1.equals(label2)) {
+                    labelPairs.add(new String[]{label1, label2});
+                }
+            }
+        }
+
+        List<GeneralFrequentPath> result = new ArrayList<>();
+
+        HashSet<SimplePath> allPaths = new HashSet<>();
+
+        for (String[] labelPair : labelPairs) {
+            String startLabel = labelPair[0];
+            String endLabel = labelPair[1];
+            HashSet<SimplePath> paths = findPaths(startLabel, endLabel, labelToVertices, vertexToPaths, minSupport);
+            allPaths.addAll(paths);
+        }
+
+        return result;
+    }
 
     // Auxiliary method for getting the vertices with a given ID from the dataset
     private static EPGMVertex getVertexById(Collection<EPGMVertex> vertices, GradoopId id) {
@@ -32,7 +89,7 @@ public class GraphSearch_v1 {
     }
 
 
-    public static void findAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> topologicalSort) throws Exception {
+    public static Map<String, Map<GradoopId, Integer>> findAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> topologicalSort) throws Exception {
 
         Collection<EPGMVertex> vertices = topologicalSort.collect();
 
@@ -63,10 +120,10 @@ public class GraphSearch_v1 {
                 })
                 .collect(Collectors.toList());
 
-        // 创建两个 Map 类型的变量，分别用来存储每个标签对应的顶点集合，以及每个顶点对应的路径集合
-        // Used to store the set of vertices corresponding to each label, and the set of paths corresponding to each vertex
-        Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
-        Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
+//        // 创建两个 Map 类型的变量，分别用来存储每个标签对应的顶点集合，以及每个顶点对应的路径集合
+//        // Used to store the set of vertices corresponding to each label, and the set of paths corresponding to each vertex
+//        Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
+//        Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
 
         // 找出所有没有出边的节点，这些节点将作为路径的终止节点
         // Find all the nodes that are not out of the edge, these nodes will be used as the terminating nodes of the path
@@ -80,35 +137,35 @@ public class GraphSearch_v1 {
 
         // 遍历所有的起始节点，对每个节点调用 computeShortestPaths 方法来计算从该节点出发的所有最短路径
         // Iterate over all the start nodes and call the computeShortestPaths method on each node to compute all the shortest paths from that node.
-        Map<String, Map<GradoopId, Integer>> shortestPathss = new HashMap<>();
-
+        Map<String, Map<GradoopId, Integer>> shortestPaths = new HashMap<>();
         for (EPGMVertex vertex : startingVertices) {
             GradoopId sourceId = vertex.getId();
-            Map<String, Map<GradoopId, Integer>> shortestPaths = computeShortestPaths(sourceId, new ArrayList<>(vertices), adjList, terminalVertices, pathIdCounter);
-            shortestPathss.putAll(shortestPaths);
-            System.out.println("Shortest paths from vertex " + sourceId + ":");
-
-            // 打印出从当前节点出发的所有最短路径
-            // Print out all the shortest paths from the current node
-            for (Map.Entry<String, Map<GradoopId, Integer>> entry : shortestPaths.entrySet()) {
-                System.out.println("Path id " + entry.getKey() + " to vertex " + entry.getValue().keySet().stream().max(Comparator.comparing(entry.getValue()::get)).get() + ":");
-                for (GradoopId id : entry.getValue().keySet()) {
-                    System.out.println(getVertexById(vertices, id));
-                    labelToVertices.computeIfAbsent(getVertexById(vertices, id).getLabel(), k -> new HashSet<>()).add(id);
-                    vertexToPaths.computeIfAbsent(id, k -> new HashMap<>()).put(entry.getKey(), entry.getValue().get(id));
-                }
-                System.out.println();
-            }
+            Map<String, Map<GradoopId, Integer>> shortestPath = computeShortestPaths(sourceId, new ArrayList<>(vertices), adjList, terminalVertices, pathIdCounter);
+            shortestPaths.putAll(shortestPath);
+//            System.out.println("Shortest paths from vertex " + sourceId + ":");
+//
+//            // 打印出从当前节点出发的所有最短路径
+//            // Print out all the shortest paths from the current node
+//            for (Map.Entry<String, Map<GradoopId, Integer>> entry : shortestPaths.entrySet()) {
+//                System.out.println("Path id " + entry.getKey() + " to vertex " + entry.getValue().keySet().stream().max(Comparator.comparing(entry.getValue()::get)).get() + ":");
+//                for (GradoopId id : entry.getValue().keySet()) {
+//                    System.out.println(getVertexById(vertices, id));
+//                    labelToVertices.computeIfAbsent(getVertexById(vertices, id).getLabel(), k -> new HashSet<>()).add(id);
+//                    vertexToPaths.computeIfAbsent(id, k -> new HashMap<>()).put(entry.getKey(), entry.getValue().get(id));
+//                }
+//                System.out.println();
+//            }
         }
         // 打印出标签到顶点集合和顶点到路径集合的映射
         // Print out the mapping of labels to vertex collections and vertices to path collections
-        System.out.println("Label to Vertices mapping: " + labelToVertices);
-        System.out.println();
-        System.out.println("Vertex to Paths mapping: " + vertexToPaths);
+        //System.out.println("Label to Vertices mapping: " + labelToVertices);
+        //System.out.println();
+        //System.out.println("Vertex to Paths mapping: " + vertexToPaths);
 
         // 找到从"buys"到"sells"的所有路径，这些路径在整个数据集中的出现次数至少为2
         // Find all paths from "buys" to "sells" that have at least 2 occurrences in the entire dataset.
-        findPaths("buys", "transfers_ownership", labelToVertices, vertexToPaths, 2);
+        //findPaths("buys", "transfers_ownership", labelToVertices, vertexToPaths, 2);
+        return shortestPaths;
     }
 
 
@@ -297,17 +354,5 @@ public class GraphSearch_v1 {
 
     }
 
-    public static void main(String[] args) throws Exception {
 
-        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-
-        LogicalGraph graph = TestData.loadTestData(env);
-
-        graph.print();
-
-        DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
-        topologicalSort.print();
-
-        findAllSimplePaths(graph, topologicalSort);
-    }
 }
