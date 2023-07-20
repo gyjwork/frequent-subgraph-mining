@@ -1,5 +1,7 @@
 package com.ncl.gradoopgraph.Beans;
 
+import java.util.List;
+
 /**
  * @author gyj
  * @title: GeneralFrequentPath
@@ -9,10 +11,10 @@ package com.ncl.gradoopgraph.Beans;
  */
 public class GeneralFrequentPath {
     private String startNodeLabel;
-    private Integer edgeId;
+    private List<Integer> edgeId;
     private String endNodeLabel;
 
-    public GeneralFrequentPath(String startNodeLabel, Integer edgeId, String endNodeLabel) {
+    public GeneralFrequentPath(String startNodeLabel, List<Integer> edgeId, String endNodeLabel) {
         this.startNodeLabel = startNodeLabel;
         this.edgeId = edgeId;
         this.endNodeLabel = endNodeLabel;
@@ -26,11 +28,11 @@ public class GeneralFrequentPath {
         this.startNodeLabel = startNodeLabel;
     }
 
-    public Integer getEdgeId() {
+    public List<Integer> getEdgeId() {
         return edgeId;
     }
 
-    public void setEdgeId(Integer edgeId) {
+    public void setEdgeId(List<Integer> edgeId) {
         this.edgeId = edgeId;
     }
 

@@ -1,8 +1,7 @@
 package com.ncl.gradoopgraph.utils;
 
 import com.ncl.gradoopgraph.Beans.GeneralFrequentPath;
-import com.ncl.gradoopgraph.Beans.SimplePath;
-import javafx.util.Pair;
+import com.ncl.gradoopgraph.loadData.TestData;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
@@ -22,19 +21,28 @@ import java.util.stream.Collectors;
  */
 public class GeneralFrequentGraph {
 
-    private final ExecutionEnvironment env;
 
-    public GeneralFrequentGraph(ExecutionEnvironment env) {
-        this.env = env;
-    }
-
-    public List<GeneralFrequentPath> miningAlgorithm(LogicalGraph graph, int minSupport) throws Exception {
+    public static Set<GeneralFrequentPath> miningAlgorithm(LogicalGraph graph,ExecutionEnvironment env, int minSupport) throws Exception {
         // 1. Perform topological sort on the graph
         DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
         Collection<EPGMVertex> vertices = topologicalSort.collect();
 
         // 2. Find all simple paths
         Map<String, Map<GradoopId, Integer>> simplePaths = findAllSimplePaths(graph, topologicalSort);
+
+        // 对于 simplePaths 中的每个条目进行迭代
+        simplePaths.forEach((key, value) -> {
+            // 打印出路径标签
+            System.out.println("Path: " + key);
+            // 对于给定路径下的每个条目进行迭代
+            value.forEach((id, position) -> {
+                // 打印出节点ID及其在路径中的位置
+                System.out.println("Node ID: " + id + ", Position in Path: " + position);
+            });
+            // 添加分隔符以便区分不同的路径
+            System.out.println("------------");
+        });
+
 
         // 3. 创建两个 Map 类型的变量，分别用来存储每个标签对应的顶点集合，以及每个顶点对应的路径集合
         Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
@@ -64,18 +72,17 @@ public class GeneralFrequentGraph {
             }
         }
 
-        List<GeneralFrequentPath> result = new ArrayList<>();
-
-        HashSet<SimplePath> allPaths = new HashSet<>();
+        HashSet<GeneralFrequentPath> allPaths = new HashSet<>();
 
         for (String[] labelPair : labelPairs) {
             String startLabel = labelPair[0];
             String endLabel = labelPair[1];
-            HashSet<SimplePath> paths = findPaths(startLabel, endLabel, labelToVertices, vertexToPaths, minSupport);
+            System.out.println("【 Start Label 】 : " + startLabel +" 【 End Label 】 : " + endLabel);
+            HashSet<GeneralFrequentPath> paths = findPaths(startLabel, endLabel, labelToVertices, vertexToPaths, minSupport);
             allPaths.addAll(paths);
         }
 
-        return result;
+        return allPaths;
     }
 
     // Auxiliary method for getting the vertices with a given ID from the dataset
@@ -142,19 +149,19 @@ public class GeneralFrequentGraph {
             GradoopId sourceId = vertex.getId();
             Map<String, Map<GradoopId, Integer>> shortestPath = computeShortestPaths(sourceId, new ArrayList<>(vertices), adjList, terminalVertices, pathIdCounter);
             shortestPaths.putAll(shortestPath);
-//            System.out.println("Shortest paths from vertex " + sourceId + ":");
-//
-//            // 打印出从当前节点出发的所有最短路径
-//            // Print out all the shortest paths from the current node
-//            for (Map.Entry<String, Map<GradoopId, Integer>> entry : shortestPaths.entrySet()) {
-//                System.out.println("Path id " + entry.getKey() + " to vertex " + entry.getValue().keySet().stream().max(Comparator.comparing(entry.getValue()::get)).get() + ":");
-//                for (GradoopId id : entry.getValue().keySet()) {
-//                    System.out.println(getVertexById(vertices, id));
-//                    labelToVertices.computeIfAbsent(getVertexById(vertices, id).getLabel(), k -> new HashSet<>()).add(id);
-//                    vertexToPaths.computeIfAbsent(id, k -> new HashMap<>()).put(entry.getKey(), entry.getValue().get(id));
-//                }
-//                System.out.println();
-//            }
+            System.out.println("Shortest paths from vertex " + sourceId + ":");
+
+            // 打印出从当前节点出发的所有最短路径
+            // Print out all the shortest paths from the current node
+            for (Map.Entry<String, Map<GradoopId, Integer>> entry : shortestPath.entrySet()) {
+                System.out.println("Path id " + entry.getKey() + " to vertex " + entry.getValue().keySet().stream().max(Comparator.comparing(entry.getValue()::get)).get() + ":");
+                for (GradoopId id : entry.getValue().keySet()) {
+                    System.out.println(getVertexById(vertices, id));
+                    //labelToVertices.computeIfAbsent(getVertexById(vertices, id).getLabel(), k -> new HashSet<>()).add(id);
+                   // vertexToPaths.computeIfAbsent(id, k -> new HashMap<>()).put(entry.getKey(), entry.getValue().get(id));
+                }
+                System.out.println();
+            }
         }
         // 打印出标签到顶点集合和顶点到路径集合的映射
         // Print out the mapping of labels to vertex collections and vertices to path collections
@@ -167,7 +174,6 @@ public class GeneralFrequentGraph {
         //findPaths("buys", "transfers_ownership", labelToVertices, vertexToPaths, 2);
         return shortestPaths;
     }
-
 
     /*
     这个方法的设计目的是为了计算从一个给定的源节点到所有其他节点的最短路径。方法使用了Dijkstra的算法。
@@ -279,80 +285,66 @@ public class GeneralFrequentGraph {
         return shortestPaths;
     }
 
-    /*
+    public static HashSet<GeneralFrequentPath> findPaths(String startLabel, String endLabel,
+                                                         Map<String, Set<GradoopId>> labelToVertices,
+                                                         Map<GradoopId, Map<String, Integer>> vertexToPaths,
+                                                         int minSupport) {
 
-    这个方法使用了集合操作来找出所有满足给定条件的路径，这些条件包括：路径的起始和终止节点的标签，以及路径的最小支持度。
-    这个方法首先通过遍历起始和终止节点对，然后通过找出这两个节点之间的所有路径来找到满足条件的路径。
-    然后，这个方法通过计数和比较这些路径的数量与给定的最小支持度来确定哪些路径应该被添加到结果集中。
+        // 创建一个 HashSet 用于存储满足条件的一般路径，这些路径将由 startLabel 和 endLabel 描述并以 GeneralFrequentPath 的形式存储
+        HashSet<GeneralFrequentPath> generalPaths = new HashSet<>();
 
-    This method uses a set operation to find all paths that satisfy the given conditions,
-    which include: the labels of the start and end nodes of the path, and the minimum support of the path.
-    This method first finds the paths that satisfy the conditions by traversing the start and termination node pairs
-    and then by finding all the paths between these two nodes.
-    The method then determines which paths should be added to the result set by counting
-    and comparing the number of these paths with the given minimum support.
-
-     */
-    public static HashSet<SimplePath> findPaths(String startLabel, String endLabel,
-                                                Map<String, Set<GradoopId>> labelToVertices,
-                                                Map<GradoopId, Map<String, Integer>> vertexToPaths, int minSupport) {
-
-        // 创建一个 HashSet 用于存储满足条件的一般路径
-        // Used to store general paths that satisfy conditions
-        HashSet<SimplePath> generalPaths = new HashSet<>();
-
-        // 创建一个 Set 用于避免重复计数的路径
-        // Paths for avoiding double counting
+        // 创建一个 Set 来避免重复计数的路径
         Set<String> countedPaths = new HashSet<>();
 
-        // 获取起始标签和终止标签下的节点
-        // Get the nodes under the start and end labels
+        // 从 labelToVertices map 中获取 startLabel 和 endLabel 的节点集
         Set<GradoopId> startVertices = labelToVertices.get(startLabel);
         Set<GradoopId> endVertices = labelToVertices.get(endLabel);
 
-        int count = 0;
+        // 创建一个变量来统计满足条件的路径数量
+        int totalCount = 0;
 
-        // 对每一对起始节点和终止节点，找出它们在同一条路径上，且起始节点在终止节点前面的所有路径
-        // For each pair of start and end nodes, find all the paths where they are on the same path and the start node is in front of the end node
+        // 创建一个列表来存储满足条件的路径ID
+        List<Integer> pathIds = new ArrayList<>();
+
         for (GradoopId ids : startVertices) {
             Map<String, Integer> paths = vertexToPaths.get(ids);
             for (GradoopId ide : endVertices) {
                 Map<String, Integer> pathe = vertexToPaths.get(ide);
                 Set<String> intersection = new HashSet<>(paths.keySet());
-                // retainAll 方法用于获取两个集合的交集
-                // Get the intersection of two sets
                 intersection.retainAll(pathe.keySet());
                 for (String path : intersection) {
-                    // 如果路径中起始节点的位置小于终止节点的位置，且这条路径还未被计数过，那么增加计数器的值并将这条路径添加到已计数路径的集合中
-                    // If the position of the start node in the path is less than the position of the end node, and the path has not been counted yet,
-                    // then increase the value of the counter and add the path to the set of counted paths
                     if (paths.get(path) < pathe.get(path) && !countedPaths.contains(path)) {
-                        count++;
                         countedPaths.add(path);
+                        totalCount++;
+                        pathIds.add(Integer.parseInt(path.substring(4))); // 获取路径ID并添加到列表中
                     }
                 }
-                // 打印出两个节点的共享路径的数量
-                // Print out the number of shared paths for both nodes
-                System.out.println("Number of common elements: " + intersection.size());
             }
         }
 
-        // 如果满足条件的路径数大于或等于最小支持度，那么将这条路径添加到结果集中
-        // If the number of paths that satisfy the condition is greater than or equal to the minimum support,
-        // then add this path to the result set
-        if (count >= minSupport) {
-            generalPaths.add(new SimplePath(startLabel, endLabel));
+        if (totalCount >= minSupport) {
+            // 使用起始和结束标签以及路径ID列表创建一个新的 GeneralFrequentPath 对象，并将其添加到 generalPaths 集合中
+            generalPaths.add(new GeneralFrequentPath(startLabel, pathIds, endLabel));
         }
 
-        // 打印出满足条件的路径的数量和标签
-        // Print out the number and labels of paths that satisfy the condition
-        System.out.println(new SimplePath(startLabel, endLabel).toString() + " number : " + count);
-
-        generalPaths.forEach(System.out::println);
-
+        // 返回满足条件的频繁路径集合
         return generalPaths;
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        LogicalGraph graph = TestData.loadTestData(env);
+        graph.print();
+
+        Set<GeneralFrequentPath> allPaths =  GeneralFrequentGraph.miningAlgorithm(graph, env, 2);
+
+        for (GeneralFrequentPath path: allPaths) {
+            System.out.println(path.toString());
+        }
 
     }
+
 
 
 }
