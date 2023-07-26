@@ -64,11 +64,6 @@ public class GeneralFrequentGraph_v1 {
     // Fk maps to a collection of subgraphs (each represented as a list of edges)
     private Map<Integer, Set<List<EPGMEdge>>> frequentSubgraphs = new HashMap<>();
 
-
-    /**
-     *
-     * to do : 应该是频繁模式的集合，而不是初始化的边集合，明日需要修改 ！！！
-     */
     public LogicalGraph miningFrequentSubgraph(LogicalGraph graph, ExecutionEnvironment env, int minSup) throws Exception {
         GradoopFlinkConfig config = graph.getConfig();
 
@@ -103,6 +98,10 @@ public class GeneralFrequentGraph_v1 {
         return resultGraph;
     }
 
+    /**
+     *
+     * to do : 应该是频繁模式的集合，而不是初始化的边集合，明日需要修改 ！！！
+     */
     private Set<List<EPGMEdge>> generateF1(LogicalGraph graph) throws Exception {
         DataSet<EPGMEdge> edgeDataSet = graph.getEdges();
 
