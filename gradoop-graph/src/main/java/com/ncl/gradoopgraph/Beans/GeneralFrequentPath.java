@@ -11,13 +11,18 @@ import java.util.List;
  */
 public class GeneralFrequentPath {
     private String startNodeLabel;
-    private List<Integer> edgeId;
+    private List<Integer> edgeIds;
     private String endNodeLabel;
 
-    public GeneralFrequentPath(String startNodeLabel, List<Integer> edgeId, String endNodeLabel) {
+    public GeneralFrequentPath(String startNodeLabel, List<Integer> edgeIds, String endNodeLabel) {
         this.startNodeLabel = startNodeLabel;
-        this.edgeId = edgeId;
+        this.edgeIds = edgeIds;
         this.endNodeLabel = endNodeLabel;
+    }
+
+
+    public boolean containsEdgeIdsOf(GeneralFrequentPath other) {
+        return this.edgeIds.containsAll(other.edgeIds);
     }
 
     public String getStartNodeLabel() {
@@ -28,12 +33,12 @@ public class GeneralFrequentPath {
         this.startNodeLabel = startNodeLabel;
     }
 
-    public List<Integer> getEdgeId() {
-        return edgeId;
+    public List<Integer> getEdgeIds() {
+        return edgeIds;
     }
 
-    public void setEdgeId(List<Integer> edgeId) {
-        this.edgeId = edgeId;
+    public void setEdgeIds(List<Integer> edgeIds) {
+        this.edgeIds = edgeIds;
     }
 
     public String getEndNodeLabel() {
@@ -48,7 +53,7 @@ public class GeneralFrequentPath {
     public String toString() {
         return "GeneralFrequentPath{" +
                 "startNodeLabel='" + startNodeLabel + '\'' +
-                ", edgeId=" + edgeId +
+                ", edgeIds=" + edgeIds +
                 ", endNodeLabel='" + endNodeLabel + '\'' +
                 '}';
     }

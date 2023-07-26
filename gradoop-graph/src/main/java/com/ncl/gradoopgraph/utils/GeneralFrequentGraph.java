@@ -5,9 +5,12 @@ import com.ncl.gradoopgraph.loadData.TestData;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.gradoop.common.model.impl.id.GradoopId;
+import org.gradoop.common.model.impl.id.GradoopIdSet;
 import org.gradoop.common.model.impl.pojo.EPGMEdge;
 import org.gradoop.common.model.impl.pojo.EPGMVertex;
+import org.gradoop.common.model.impl.properties.Properties;
 import org.gradoop.flink.model.impl.epgm.LogicalGraph;
+import org.gradoop.flink.util.GradoopFlinkConfig;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,8 +24,7 @@ import java.util.stream.Collectors;
  */
 public class GeneralFrequentGraph {
 
-
-    public static Set<GeneralFrequentPath> miningAlgorithm(LogicalGraph graph,ExecutionEnvironment env, int minSupport) throws Exception {
+    public static LogicalGraph miningFrequentSubgraph(LogicalGraph graph, ExecutionEnvironment env, int minSupport) throws Exception {
         // 1. Perform topological sort on the graph
         DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
         Collection<EPGMVertex> vertices = topologicalSort.collect();
@@ -30,21 +32,14 @@ public class GeneralFrequentGraph {
         // 2. Find all simple paths
         Map<String, Map<GradoopId, Integer>> simplePaths = findAllSimplePaths(graph, topologicalSort);
 
-        // 对于 simplePaths 中的每个条目进行迭代
         simplePaths.forEach((key, value) -> {
-            // 打印出路径标签
             System.out.println("Path: " + key);
-            // 对于给定路径下的每个条目进行迭代
             value.forEach((id, position) -> {
-                // 打印出节点ID及其在路径中的位置
                 System.out.println("Node ID: " + id + ", Position in Path: " + position);
             });
-            // 添加分隔符以便区分不同的路径
             System.out.println("------------");
         });
 
-
-        // 3. 创建两个 Map 类型的变量，分别用来存储每个标签对应的顶点集合，以及每个顶点对应的路径集合
         Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
         Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
 
@@ -60,7 +55,6 @@ public class GeneralFrequentGraph {
             }
         }
 
-        // 4. 提取所有的label
         Set<String> labels = labelToVertices.keySet();
         List<String[]> labelPairs = new ArrayList<>();
 
@@ -77,12 +71,17 @@ public class GeneralFrequentGraph {
         for (String[] labelPair : labelPairs) {
             String startLabel = labelPair[0];
             String endLabel = labelPair[1];
-            System.out.println("【 Start Label 】 : " + startLabel +" 【 End Label 】 : " + endLabel);
+//            System.out.println("【 Start Label 】 : " + startLabel +" 【 End Label 】 : " + endLabel);
             HashSet<GeneralFrequentPath> paths = findPaths(startLabel, endLabel, labelToVertices, vertexToPaths, minSupport);
             allPaths.addAll(paths);
         }
 
-        return allPaths;
+        for (GeneralFrequentPath path: allPaths) {
+            System.out.println(path.toString());
+        }
+
+        LogicalGraph logicalGraph = pathGraphGenerator(allPaths, graph.getConfig());
+        return logicalGraph;
     }
 
     // Auxiliary method for getting the vertices with a given ID from the dataset
@@ -94,7 +93,6 @@ public class GeneralFrequentGraph {
         }
         return null;
     }
-
 
     public static Map<String, Map<GradoopId, Integer>> findAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> topologicalSort) throws Exception {
 
@@ -127,11 +125,6 @@ public class GeneralFrequentGraph {
                 })
                 .collect(Collectors.toList());
 
-//        // 创建两个 Map 类型的变量，分别用来存储每个标签对应的顶点集合，以及每个顶点对应的路径集合
-//        // Used to store the set of vertices corresponding to each label, and the set of paths corresponding to each vertex
-//        Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
-//        Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
-
         // 找出所有没有出边的节点，这些节点将作为路径的终止节点
         // Find all the nodes that are not out of the edge, these nodes will be used as the terminating nodes of the path
         Set<GradoopId> terminalVertices = vertices.stream()
@@ -157,21 +150,11 @@ public class GeneralFrequentGraph {
                 System.out.println("Path id " + entry.getKey() + " to vertex " + entry.getValue().keySet().stream().max(Comparator.comparing(entry.getValue()::get)).get() + ":");
                 for (GradoopId id : entry.getValue().keySet()) {
                     System.out.println(getVertexById(vertices, id));
-                    //labelToVertices.computeIfAbsent(getVertexById(vertices, id).getLabel(), k -> new HashSet<>()).add(id);
-                   // vertexToPaths.computeIfAbsent(id, k -> new HashMap<>()).put(entry.getKey(), entry.getValue().get(id));
                 }
                 System.out.println();
             }
         }
-        // 打印出标签到顶点集合和顶点到路径集合的映射
-        // Print out the mapping of labels to vertex collections and vertices to path collections
-        //System.out.println("Label to Vertices mapping: " + labelToVertices);
-        //System.out.println();
-        //System.out.println("Vertex to Paths mapping: " + vertexToPaths);
 
-        // 找到从"buys"到"sells"的所有路径，这些路径在整个数据集中的出现次数至少为2
-        // Find all paths from "buys" to "sells" that have at least 2 occurrences in the entire dataset.
-        //findPaths("buys", "transfers_ownership", labelToVertices, vertexToPaths, 2);
         return shortestPaths;
     }
 
@@ -331,17 +314,76 @@ public class GeneralFrequentGraph {
         return generalPaths;
     }
 
+    private static LogicalGraph pathGraphGenerator(HashSet<GeneralFrequentPath> paths, GradoopFlinkConfig config) {
+
+        ArrayList<EPGMVertex> vertices = new ArrayList<>();
+        ArrayList<EPGMEdge> edges = new ArrayList<>();
+
+        HashMap<String, EPGMVertex> labelToVertex = new HashMap<>();
+
+        for (GeneralFrequentPath path : paths) {
+            // Get or create the start vertex
+            EPGMVertex startVertex = labelToVertex.get(path.getStartNodeLabel());
+            if (startVertex == null) {
+                Properties properties = new Properties();
+                properties.set("name", path.getStartNodeLabel());
+
+                startVertex = new EPGMVertex();
+                startVertex.setId(GradoopId.get());
+                startVertex.setLabel("frequentNode");
+                startVertex.setProperties(properties);
+
+                vertices.add(startVertex);
+                labelToVertex.put(path.getStartNodeLabel(), startVertex);
+            }
+
+            // Get or create the end vertex
+            EPGMVertex endVertex = labelToVertex.get(path.getEndNodeLabel());
+            if (endVertex == null) {
+                Properties properties = new Properties();
+                properties.set("name", path.getEndNodeLabel());
+
+                endVertex = new EPGMVertex();
+                endVertex.setId(GradoopId.get());
+                endVertex.setLabel("frequentNode");
+                endVertex.setProperties(properties);
+
+                vertices.add(endVertex);
+                labelToVertex.put(path.getEndNodeLabel(), endVertex);
+            }
+
+            // Create a new edge
+            Properties edgeProperties = new Properties();
+            edgeProperties.set("edgeIdList", path.getEdgeIds().toString());
+            EPGMEdge edge = new EPGMEdge(GradoopId.get(), "frequentEdge", startVertex.getId(), endVertex.getId(), edgeProperties, new GradoopIdSet());
+            edges.add(edge);
+        }
+
+//        for (EPGMEdge edge1 : edges) {
+//            for (EPGMEdge edge2 : edges) {
+//                if (!edge1.equals(edge2) && ListStringUtil.stringToList(edge1.getPropertyValue("edgeIdList").getString()).containsAll(ListStringUtil.stringToList(edge2.getPropertyValue("edgeIdList").getString()))) {
+//                    Properties edgeProperties = new Properties();
+//                    edgeProperties.set("edgeIdList", edge1.getPropertyValue("edgeIdList"));
+//                    EPGMEdge newEdge = new EPGMEdge(GradoopId.get(), "frequentEdge", edge2.getSourceId(), edge1.getTargetId(), edgeProperties, new GradoopIdSet());
+//                    edges.add(newEdge);
+//                }
+//            }
+//        }
+
+        DataSet<EPGMVertex> verticesDataSet = config.getExecutionEnvironment().fromCollection(vertices);
+        DataSet<EPGMEdge> edgesDataSet = config.getExecutionEnvironment().fromCollection(edges);
+
+        return config.getLogicalGraphFactory().fromDataSets(verticesDataSet, edgesDataSet);
+    }
+
 
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         LogicalGraph graph = TestData.loadTestData(env);
         graph.print();
 
-        Set<GeneralFrequentPath> allPaths =  GeneralFrequentGraph.miningAlgorithm(graph, env, 2);
-
-        for (GeneralFrequentPath path: allPaths) {
-            System.out.println(path.toString());
-        }
+        LogicalGraph logicalGraph =  GeneralFrequentGraph.miningFrequentSubgraph(graph, env, 3);
+        logicalGraph.print();
 
     }
 
