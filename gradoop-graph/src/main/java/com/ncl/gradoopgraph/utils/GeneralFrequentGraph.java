@@ -85,7 +85,7 @@ public class GeneralFrequentGraph {
     }
 
     // Auxiliary method for getting the vertices with a given ID from the dataset
-    private static EPGMVertex getVertexById(Collection<EPGMVertex> vertices, GradoopId id) {
+    public static EPGMVertex getVertexById(Collection<EPGMVertex> vertices, GradoopId id) {
         for (EPGMVertex vertex : vertices) {
             if (vertex.getId().equals(id)) {
                 return vertex;
