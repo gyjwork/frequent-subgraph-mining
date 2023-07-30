@@ -287,7 +287,7 @@ public class GeneralFrequentGraph {
         int totalCount = 0;
 
         // 创建一个列表来存储满足条件的路径ID
-        List<Integer> pathIds = new ArrayList<>();
+        Set<Integer> pathIds = new HashSet<>();
 
         for (GradoopId ids : startVertices) {
             Map<String, Integer> paths = vertexToPaths.get(ids);
