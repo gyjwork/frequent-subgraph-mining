@@ -113,10 +113,7 @@ public class GraphSearch {
 
     // 定义打印所有简单路径的方法
     // Define the method for printing all simple paths
-    public static void printAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> sortedVertices) throws Exception {
-        // 将数据集转化为Java集合
-        // Convert the data set into a Java collection
-        Collection<EPGMVertex> vertices = sortedVertices.collect();
+    public static void printAllSimplePaths(LogicalGraph graph, List<EPGMVertex> vertices) throws Exception {
 
         // 创建一个邻接列表和一个逆邻接列表
         // Create an adjacency list and an inverse adjacency list
@@ -314,8 +311,8 @@ public class GraphSearch {
 
         graph.print();
 
-        DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
-        topologicalSort.print();
+        List<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph);
+        topologicalSort.stream().forEach(System.out::println);
 
         printAllSimplePaths(graph, topologicalSort);
 

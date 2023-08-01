@@ -26,8 +26,8 @@ public class GeneralFrequentGraph {
 
     public static LogicalGraph miningFrequentSubgraph(LogicalGraph graph, ExecutionEnvironment env, int minSupport) throws Exception {
         // 1. Perform topological sort on the graph
-        DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
-        Collection<EPGMVertex> vertices = topologicalSort.collect();
+        List<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph);
+        Collection<EPGMVertex> vertices = topologicalSort;
 
         // 2. Find all simple paths
         Map<String, Map<GradoopId, Integer>> simplePaths = findAllSimplePaths(graph, topologicalSort);
@@ -94,9 +94,7 @@ public class GeneralFrequentGraph {
         return null;
     }
 
-    public static Map<String, Map<GradoopId, Integer>> findAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> topologicalSort) throws Exception {
-
-        Collection<EPGMVertex> vertices = topologicalSort.collect();
+    public static Map<String, Map<GradoopId, Integer>> findAllSimplePaths(LogicalGraph graph, List<EPGMVertex> vertices) throws Exception {
 
         // 创建两个 Map 类型的变量，分别用来存储正向邻接表和反向邻接表
         // Used to store forward and reverse adjacency tables

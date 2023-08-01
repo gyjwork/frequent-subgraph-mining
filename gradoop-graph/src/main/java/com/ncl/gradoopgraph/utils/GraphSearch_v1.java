@@ -32,9 +32,7 @@ public class GraphSearch_v1 {
     }
 
 
-    public static void findAllSimplePaths(LogicalGraph graph, DataSet<EPGMVertex> topologicalSort) throws Exception {
-
-        Collection<EPGMVertex> vertices = topologicalSort.collect();
+    public static void findAllSimplePaths(LogicalGraph graph, List<EPGMVertex> vertices) throws Exception {
 
         // 创建两个 Map 类型的变量，分别用来存储正向邻接表和反向邻接表
         // Used to store forward and reverse adjacency tables
@@ -305,8 +303,8 @@ public class GraphSearch_v1 {
 
         graph.print();
 
-        DataSet<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph, env);
-        topologicalSort.print();
+        List<EPGMVertex> topologicalSort = TopologicalSort.topologicalSort(graph);
+        topologicalSort.stream().forEach(System.out::println);
 
         findAllSimplePaths(graph, topologicalSort);
     }
