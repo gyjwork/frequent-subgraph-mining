@@ -1,0 +1,7 @@
+g;graph;name:string
+v;person;name:string
+v;car;brand:string
+e;owns;__valFrom:long,__valTo:long
+e;buys;__valAt:long
+e;sells;__valAt:long
+e;transfers_ownership;contents:string,__valAt:long
