@@ -14,9 +14,9 @@ public class GraphDataGenerator {
     }
 
     public static void main(String[] args) throws IOException {
-        int numPersons = 2;
-        int numCars = 2;
-        int numTransactions = 5;
+        int numPersons = 4;
+        int numCars = 4;
+        int numTransactions = 10;
         String directoryPath = "src/main/resources/myfolder";
         File directory = new File(directoryPath);
         if (!directory.exists()) {
@@ -35,11 +35,6 @@ public class GraphDataGenerator {
         for (int i = 0; i < numCars; i++) {
             carStatus[i] = CarStatus.FOR_SALE;
             carOwners[i] = -1;
-        }
-
-        Map<Integer, Boolean> newOwnsEdgeWritten = new HashMap<>();
-        for (int i = 0; i < numCars; i++) {
-            newOwnsEdgeWritten.put(i, false);
         }
 
         try (FileWriter verticesWriter = new FileWriter(directoryPath + "/vertices.csv");
@@ -85,8 +80,11 @@ public class GraphDataGenerator {
                 time += 86400000;
 
                 // Owns
-                ownsEdges.put(carIndex, edgeId);
-                edgeId++;
+                int ownsEdgeId = edgeId++;
+                ownsEdges.put(carIndex, ownsEdgeId);
+                edgesWriter.write(String.format("%024d", ownsEdgeId) + ";[000000000000000000000000];" +
+                        String.format("%024d", buyerIndex) + ";" +
+                        String.format("%024d", numPersons + carIndex) + ";owns;" + time + "\n");
 
                 carStatus[carIndex] = CarStatus.OWNED;
                 carOwners[carIndex] = buyerIndex;
@@ -99,14 +97,15 @@ public class GraphDataGenerator {
                             String.format("%024d", buyerIndex) + ";" +
                             String.format("%024d", numPersons + carIndex) + ";sells;" + time + "\n");
 
-                    int ownsEdgeId = ownsEdges.get(carIndex);
+                    // Update the owns edge with end time
                     edgesWriter.write(String.format("%024d", ownsEdgeId) + ";[000000000000000000000000];" +
                             String.format("%024d", buyerIndex) + ";" +
                             String.format("%024d", numPersons + carIndex) + ";owns;" + (time - 86400000) + "|" + time + "\n");
 
                     carStatus[carIndex] = CarStatus.SOLD;
                 }
-// Check if car is sold and bought by another person
+
+                // Check if car is sold and bought by another person
                 if (carStatus[carIndex] == CarStatus.SOLD) {
                     int newBuyerIndex;
                     do {
@@ -133,34 +132,8 @@ public class GraphDataGenerator {
 
                     // Update the ownsEdges map to reflect the new ownership edge
                     ownsEdges.put(carIndex, newOwnsEdgeId);
-
-                    // Set the flag to indicate that the new owns edge has been written
-                    newOwnsEdgeWritten.put(carIndex, true);
-
-                    // Remove the previous owns edge if it hasn't been written
-                    if (!newOwnsEdgeWritten.get(carIndex)) {
-                        int oldOwnsEdgeId = ownsEdges.get(carIndex);
-                        edgesWriter.write(String.format("%024d", oldOwnsEdgeId) + ";[000000000000000000000000];" +
-                                String.format("%024d", buyerIndex) + ";" +
-                                String.format("%024d", numPersons + carIndex) + ";owns;" + time + "\n"); // End time for removal
-                    }
-
-
-                }
-
-                // Write final owns edges without end time only for the owned cars
-                for (Map.Entry<Integer, Integer> entry : ownsEdges.entrySet()) {
-                    carIndex = entry.getKey();
-                    if (carStatus[carIndex] == CarStatus.OWNED && !newOwnsEdgeWritten.get(carIndex)) {
-                        int ownsEdgeId = entry.getValue();
-                        int ownerIndex = carOwners[carIndex];
-                        edgesWriter.write(String.format("%024d", ownsEdgeId) + ";[000000000000000000000000];" +
-                                String.format("%024d", ownerIndex) + ";" +
-                                String.format("%024d", numPersons + carIndex) + ";owns;" + (time - 86400000) + "\n");
-                    }
                 }
             }
         }
     }
-
 }
