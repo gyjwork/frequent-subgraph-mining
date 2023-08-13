@@ -14,10 +14,10 @@ public class GraphDataGenerator {
     }
 
     public static void main(String[] args) throws IOException {
-        int numPersons = 4;
-        int numCars = 4;
-        int numTransactions = 10;
-        String directoryPath = "src/main/resources/myfolder";
+        int numPersons = 5;
+        int numCars = 5;
+        int numTransactions = 20;
+        String directoryPath = "src/main/resources/myfolder——small";
         File directory = new File(directoryPath);
         if (!directory.exists()) {
             directory.mkdirs();

@@ -25,6 +25,11 @@ public class TestData {
         String inputPath = null;
         try {
             inputPath = new ClassPathResource("timeSeriesGraph-20230427").getFile().getAbsolutePath();
+            //myfolder——small
+            //inputPath = new ClassPathResource("myfolder——small").getFile().getAbsolutePath();
+            //inputPath = new ClassPathResource("myfolder——medium").getFile().getAbsolutePath();
+            //inputPath = new ClassPathResource("myfolder——large").getFile().getAbsolutePath();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
