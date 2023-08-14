@@ -32,28 +32,23 @@ public class GFSM {
 
     public static Map<Integer, LogicalGraph> run(LogicalGraph graph, int minSup) throws Exception {
 
-        // 使用拓扑排序对图中的节点进行排序，确保得到一个有向无环图（DAG）的线性表示
         // Sort the nodes in the graph using topological ordering to ensure that a linear representation of a directed acyclic graph (DAG) is obtained
         List<EPGMVertex> topologicalSortVertices = TopologicalSort.topologicalSort(graph);
         List<EPGMEdge> edges = graph.getEdges().collect();
 
-        // 查找图中所有的简单路径
         // Find all simple paths in the graph
         Map<String, Map<GradoopId, Integer>> simplePaths = FindAllSimplePaths.run(graph, topologicalSortVertices);
 
         System.out.println("simplePaths size : " + simplePaths.keySet().size());
 
-        // 创建一个映射，将顶点ID映射到EPGMVertex对象
         // Create a map that maps vertex IDs to EPGMVertex objects
         Map<GradoopId, EPGMVertex> idToVertexMap = new HashMap<>();
         for (EPGMVertex vertex : topologicalSortVertices) {
             idToVertexMap.put(vertex.getId(), vertex);
         }
 
-        // 创建一个映射，将标签映射到顶点的ID集合
         // Create a mapping that maps labels to a collection of vertex IDs
         Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
-        // 创建一个映射，将顶点ID映射到路径和路径值的映射
         // Create a mapping that maps vertex IDs to paths and path values
         Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
 
@@ -80,7 +75,6 @@ public class GFSM {
 
             for (List<EPGMEdge> candidateEdges : generateSimplePaths) {
                 // Step 2: Generate candidate frequent subGraphs (original graph labelled as points)
-                // 产生了新一组候选频繁子图，如原先是A-B, 扩展到A-B-C之后，新产生了 A-C、B-C
                 List<GeneralFrequentPath> candidates = generateF(candidateEdges, idToVertexMap, vertexToPaths);
 
                 //System.out.println("k = " + k);
@@ -231,7 +225,6 @@ public class GFSM {
 
         List<GeneralFrequentPath> generalPaths = new ArrayList<>();
 
-        // 获取最新添加的边
         // Get the newly added edge
         EPGMEdge lastEdge = simplePath.get(simplePath.size() - 1);
 
@@ -248,7 +241,6 @@ public class GFSM {
 
             for (String pathKey : intersection) {
                 if (pathsStart.get(pathKey) < pathsEnd.get(pathKey)) {
-                    // 获取路径ID并添加到列表中
                     // Get the path ID and add it to the list
                     pathIds.add(Integer.parseInt(pathKey.substring(4)));
                 }
@@ -335,12 +327,12 @@ public class GFSM {
             double durationInSeconds = (double) durationInNano / 1_000_000_000.0;
 
             System.out.println("minSup：" + i);
-            System.out.println("算法运行时间（秒）：" + durationInSeconds);
+            System.out.println("Algorithm run time (seconds)：" + durationInSeconds);
 
             for (Map.Entry<Integer, LogicalGraph> entry : frequentSubGraph.entrySet()) {
                 if (entry.getValue().getEdges().count() > cnt) {
                     cnt = entry.getValue().getEdges().count();
-                    System.out.println("频繁子图数量 ：" + cnt);
+                    System.out.println("Number of frequent subgraphs:" + cnt);
                     System.out.println("Key: " + entry.getKey());
                     entry.getValue().print();
 

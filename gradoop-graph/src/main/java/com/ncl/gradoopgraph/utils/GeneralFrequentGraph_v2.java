@@ -47,26 +47,21 @@ public class GeneralFrequentGraph_v2 {
 
     public static Map<Integer, LogicalGraph> miningFrequentSubGraph(LogicalGraph graph, int minSup) throws Exception {
 
-        // 使用拓扑排序对图中的节点进行排序，确保得到一个有向无环图（DAG）的线性表示
         // Sort the nodes in the graph using topological ordering to ensure that a linear representation of a directed acyclic graph (DAG) is obtained
         List<EPGMVertex> topologicalSortVertices = TopologicalSort.topologicalSort(graph);
         List<EPGMEdge> edges = graph.getEdges().collect();
 
-        // 查找图中所有的简单路径
         // Find all simple paths in the graph
         Map<String, Map<GradoopId, Integer>> simplePaths = GeneralFrequentGraph.findAllSimplePaths(graph, topologicalSortVertices);
 
-        // 创建一个映射，将顶点ID映射到EPGMVertex对象
         // Create a map that maps vertex IDs to EPGMVertex objects
         Map<GradoopId, EPGMVertex> idToVertexMap = new HashMap<>();
         for (EPGMVertex vertex : topologicalSortVertices) {
             idToVertexMap.put(vertex.getId(), vertex);
         }
 
-        // 创建一个映射，将标签映射到顶点的ID集合
         // Create a mapping that maps labels to a collection of vertex IDs
         Map<String, Set<GradoopId>> labelToVertices = new HashMap<>();
-        // 创建一个映射，将顶点ID映射到路径和路径值的映射
         // Create a mapping that maps vertex IDs to paths and path values
         Map<GradoopId, Map<String, Integer>> vertexToPaths = new HashMap<>();
 
@@ -93,7 +88,6 @@ public class GeneralFrequentGraph_v2 {
 
             for (List<EPGMEdge> candidateEdges : generateSimplePaths) {
                 // Step 2: Generate candidate frequent subGraphs (original graph labelled as points)
-                // 产生了新一组候选频繁子图，如原先是A-B, 扩展到A-B-C之后，新产生了 A-C、B-C
                 List<GeneralFrequentPath> candidates = generateF(candidateEdges, idToVertexMap, vertexToPaths);
 
                 System.out.println("k = " + k);
@@ -244,7 +238,6 @@ public class GeneralFrequentGraph_v2 {
 
         List<GeneralFrequentPath> generalPaths = new ArrayList<>();
 
-        // 获取最新添加的边
         // Get the newly added edge
         EPGMEdge lastEdge = simplePath.get(simplePath.size() - 1);
 
@@ -261,7 +254,6 @@ public class GeneralFrequentGraph_v2 {
 
             for (String pathKey : intersection) {
                 if (pathsStart.get(pathKey) < pathsEnd.get(pathKey)) {
-                    // 获取路径ID并添加到列表中
                     // Get the path ID and add it to the list
                     pathIds.add(Integer.parseInt(pathKey.substring(4)));
                 }
@@ -340,11 +332,9 @@ public class GeneralFrequentGraph_v2 {
             value.forEach(path -> System.out.println("    " + path));
         });
 
-        // 创建一个映射来存储 startNodeLabel 和 endNodeLabel 的组合到 GeneralFrequentPath 的映射
         // Create a map to store the combination of startNodeLabel and endNodeLabel to the GeneralFrequentPath.
         Map<String, GeneralFrequentPath> mergeMap = new HashMap<>();
 
-        // 遍历每个 GeneralFrequentPath，如果具有相同的 startNodeLabel 和 endNodeLabel，则合并其 edgeIds
         // Iterate over each GeneralFrequentPath and merge the edgeIds if they have the same startNodeLabel and endNodeLabel.
         for (List<GeneralFrequentPath> paths : frequentSubgraphs.values()) {
             for (GeneralFrequentPath path : paths) {
@@ -352,11 +342,9 @@ public class GeneralFrequentGraph_v2 {
                 GeneralFrequentPath existingPath = mergeMap.get(key);
 
                 if (existingPath != null) {
-                    // 如果已经存在具有相同 startNodeLabel 和 endNodeLabel 的路径，则合并 edgeIds
                     // If there are already paths with the same startNodeLabel and endNodeLabel, merge edgeIds
                     existingPath.getEdgeIds().addAll(path.getEdgeIds());
                 } else {
-                    // 否则，添加新路径到映射
                     // Otherwise, add a new path to the map
                     mergeMap.put(key, path);
                 }

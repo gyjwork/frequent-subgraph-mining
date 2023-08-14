@@ -41,9 +41,20 @@ public class GraphTransformerTest {
         // Set the DIMSpan algorithm parameters
         float minSupport = 1.0f;
         boolean directed = true;
-        DataSet<GraphTransaction> frequentSubgraphs = DIMSpanAlgorithm.runDIMSpanAlgorithm(graphCollection, minSupport, directed);
 
-        frequentSubgraphs.print();
+        long startTime = System.nanoTime();
+
+        //DataSet<GraphTransaction> frequentSubgraphs = DIMSpanAlgorithm.runDIMSpanAlgorithm(graphCollection, minSupport, directed);
+        DataSet<GraphTransaction> frequentSubgraphs = DIMSpanAlgorithm.runDIMSpanAlgorithm(inputGraph, minSupport, directed);
+
+
+        long endTime = System.nanoTime();
+        long durationInNano = endTime - startTime;
+        double durationInSeconds = (double) durationInNano / 1_000_000_000.0;
+
+        System.out.println("算法运行时间（秒）：" + durationInSeconds);
+
+        //frequentSubgraphs.print();
 
     }
 }

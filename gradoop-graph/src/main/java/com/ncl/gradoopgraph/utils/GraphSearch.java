@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  * @date 6/25/235:31 PM
  */
 public class GraphSearch {
-    // 辅助方法，用于从数据集中获取给定ID的顶点
     // Auxiliary method for getting the vertices with a given ID from the dataset
     private static EPGMVertex getVertexById(Collection<EPGMVertex> vertices, GradoopId id) {
         for (EPGMVertex vertex : vertices) {
@@ -38,13 +37,11 @@ public class GraphSearch {
     public static void printAllPaths(LogicalGraph graph, DataSet<EPGMVertex> sortedVertices) throws Exception {
         Collection<EPGMVertex> vertices = sortedVertices.collect();
 
-        // 邻接列表，用于表示图的结构。键为顶点的ID，值为该顶点的所有邻接顶点的ID列表
         // Adjacency list, used to represent the structure of the graph. The key is the ID of the vertex,
         // the value is the list of IDs of all neighbouring vertices of that vertex
         Map<GradoopId, List<GradoopId>> adjList = new HashMap<>();
         Map<GradoopId, List<GradoopId>> invAdjList = new HashMap<>();
 
-        // 遍历图的所有边，构造邻接列表
         // Iterate over all edges of the graph to construct the adjacency list
         for (EPGMEdge edge : graph.getEdges().collect()) {
             GradoopId sourceId = edge.getSourceId();
@@ -59,11 +56,9 @@ public class GraphSearch {
             invAdjList.get(targetId).add(sourceId);
         }
 
-        // 用于计数顶点的映射。键为顶点的标签，值为该顶点在所有路径中出现的次数
         // A map to count the vertices. The key is the label of the vertex and the value is the number of times the vertex appears in all paths
         Map<String, Integer> vertexCount = new HashMap<>();
 
-        // 获取所有没有入边的顶点，也就是可能作为搜索开始的顶点
         // Get all vertices that do not have an incoming edge, i.e. vertices that could be the start of the search
         List<EPGMVertex> startingVertices = vertices.stream()
                 .filter(vertex -> {
@@ -72,16 +67,12 @@ public class GraphSearch {
                 })
                 .collect(Collectors.toList());
 
-        // 遍历所有可能的起始顶点
         // Iterate over all possible starting vertices
         for (EPGMVertex vertex : startingVertices) {
-            // 当前路径，用于深度优先搜索
             // Current path, for depth-first search
             List<GradoopId> initialPath = new ArrayList<>();
-            // 所有的路径，每个元素都是一个从当前顶点开始的路径
             // All paths, each element being a path from the current vertex
             List<List<GradoopId>> allPaths = new ArrayList<>();
-            // 已访问的顶点，用于避免在搜索过程中重复访问同一个顶点
             // Visited vertices, to avoid repeated visits to the same vertex during the search
             Set<GradoopId> visited = new HashSet<>();
             dfs(vertex.getId(), initialPath, adjList, allPaths, visited);
@@ -89,7 +80,6 @@ public class GraphSearch {
             for (List<GradoopId> path : allPaths) {
                 System.out.println("Path:");
                 for (GradoopId id : path) {
-                    // 增加顶点的计数，使用顶点标签代替顶点ID
                     EPGMVertex currentVertex = getVertexById(vertices, id);
                     String label = currentVertex.getLabel();
                     vertexCount.put(label, vertexCount.getOrDefault(label, 0) + 1);
@@ -99,44 +89,34 @@ public class GraphSearch {
             }
         }
 
-
-        // 打印顶点的计数结果，使用顶点标签代替顶点ID
         System.out.println("Vertex counts:");
         for (Map.Entry<String, Integer> entry : vertexCount.entrySet()) {
             System.out.println("Vertex " + entry.getKey() + " appears " + entry.getValue() + " times.");
         }
     }
 
-    // 设置标签频繁的阈值为10
     // Set the frequency threshold for labels to be 10
     private static final int FREQUENCY_THRESHOLD = 10;
 
-    // 定义打印所有简单路径的方法
     // Define the method for printing all simple paths
     public static void printAllSimplePaths(LogicalGraph graph, List<EPGMVertex> vertices) throws Exception {
 
-        // 创建一个邻接列表和一个逆邻接列表
         // Create an adjacency list and an inverse adjacency list
         Map<GradoopId, List<GradoopId>> adjList = new HashMap<>();
         Map<GradoopId, List<GradoopId>> invAdjList = new HashMap<>();
-        // 创建一个标签频率的映射
         // Create a mapping of label frequencies
         Map<String, Integer> labelFrequencies = new HashMap<>();
 
-        // 遍历图中所有的边
         // Traverse all edges in the graph
         for (EPGMEdge edge : graph.getEdges().collect()) {
-            // 获取边的源顶点和目标顶点
             // Get the source vertex and target vertex of the edge
             GradoopId sourceId = edge.getSourceId();
             GradoopId targetId = edge.getTargetId();
-            // 在邻接列表和逆邻接列表中添加对应的边
             // Add the corresponding edge in the adjacency list and the inverse adjacency list
             adjList.computeIfAbsent(sourceId, k -> new ArrayList<>()).add(targetId);
             invAdjList.computeIfAbsent(targetId, k -> new ArrayList<>()).add(sourceId);
         }
 
-        // 获取所有没有入边的顶点，即没有前驱节点的顶点
         // Get all vertices without incoming edges, i.e., vertices without predecessor nodes
         List<EPGMVertex> startingVertices = vertices.stream()
                 .filter(vertex -> {
@@ -145,23 +125,17 @@ public class GraphSearch {
                 })
                 .collect(Collectors.toList());
 
-        // 遍历所有的起始顶点
         // Traverse all the starting vertices
         for (EPGMVertex vertex : startingVertices) {
-            // 对每个起始顶点，计算从该顶点出发的所有最短路径
             // For each starting vertex, calculate all shortest paths starting from this vertex
             Map<GradoopId, List<GradoopId>> shortestPaths = computeShortestPaths(vertex.getId(), new ArrayList<>(vertices), adjList);
 
-            // 遍历所有的最短路径
             // Traverse all shortest paths
             for (List<GradoopId> path : shortestPaths.values()) {
-                // 遍历路径中的每个顶点
                 // Traverse each vertex in the path
                 for (GradoopId id : path) {
-                    // 获取顶点的标签
                     // Get the label of the vertex
                     String label = getLabelById(vertices, id);
-                    // 如果标签不为空，则在标签频率的映射中增加该标签的频率
                     // If the label is not null, then increase the frequency of this label in the label frequency mapping
                     if (label != null) {
                         labelFrequencies.put(label, labelFrequencies.getOrDefault(label, 0) + 1);
@@ -170,49 +144,39 @@ public class GraphSearch {
             }
         }
 
-        // 打印出每个标签及其频率
         // Print each label and its frequency
         for (Map.Entry<String, Integer> entry : labelFrequencies.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
         System.out.println();
 
-        // 获取频繁的标签，即频率大于等于阈值的标签
         // Get the frequent labels, i.e., labels whose frequency is greater than or equal to the threshold
         Set<String> frequentLabels = labelFrequencies.entrySet().stream()
                 .filter(entry -> entry.getValue() >= FREQUENCY_THRESHOLD)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-        // 打印出频繁的标签
         // Print the frequent labels
         System.out.println("Frequent labels:");
         frequentLabels.forEach(System.out::println);
         System.out.println();
 
-        // 遍历所有的起始顶点
         // Traverse all the starting vertices
         for (EPGMVertex vertex : startingVertices) {
-            // 对每个起始顶点，计算从该顶点出发的所有最短路径
             // For each starting vertex, calculate all shortest paths starting from this vertex
             Map<GradoopId, List<GradoopId>> shortestPaths = computeShortestPaths(vertex.getId(), new ArrayList<>(vertices), adjList);
 
-            // 打印出起始顶点
             // Print the starting vertex
             System.out.println("Shortest paths from vertex " + vertex.getId() + ":");
-            // 遍历所有的最短路径
             // Traverse all shortest paths
             for (Map.Entry<GradoopId, List<GradoopId>> entry : shortestPaths.entrySet()) {
-                // 获取路径中的每个顶点
                 // Get each vertex in the path
                 List<GradoopId> path = entry.getValue();
-                // 检查路径中是否包含频繁的标签
                 // Check whether the path contains frequent labels
                 if (path.stream().anyMatch(id -> {
                     String label = getLabelById(vertices, id);
                     return label != null && frequentLabels.contains(label);
                 })) {
-                    // 如果包含频繁的标签，则打印出该路径
                     // If it contains frequent labels, then print this path
                     System.out.println("Path to vertex " + entry.getKey() + ":");
                     for (GradoopId id : path) {
@@ -225,21 +189,18 @@ public class GraphSearch {
     }
 
 
-    // 计算从源顶点到其他所有顶点的最短路径
     // Calculate the shortest path from the source vertex to all other vertices
     public static Map<GradoopId, List<GradoopId>> computeShortestPaths(GradoopId sourceId, List<EPGMVertex> sortedVertices, Map<GradoopId, List<GradoopId>> adjList) {
         Map<GradoopId, Integer> distances = new HashMap<>();
         Map<GradoopId, GradoopId> previousNodes = new HashMap<>();
         Map<GradoopId, List<GradoopId>> shortestPaths = new HashMap<>();
 
-        // 初始化距离和前驱节点
         // Initialising distances and precursor nodes
         for (EPGMVertex vertex : sortedVertices) {
             GradoopId id = vertex.getId();
             distances.put(id, id.equals(sourceId) ? 0 : Integer.MAX_VALUE);
         }
 
-        // 更新距离和前驱节点
         // Update distance and predecessor nodes
         for (EPGMVertex vertex : sortedVertices) {
             GradoopId id = vertex.getId();
@@ -254,7 +215,6 @@ public class GraphSearch {
             }
         }
 
-        // 根据前驱节点构建最短路径
         // Construct the shortest path based on the predecessor node
         for (GradoopId id : distances.keySet()) {
             if (!distances.get(id).equals(Integer.MAX_VALUE)) {
@@ -282,13 +242,11 @@ public class GraphSearch {
         currentPath.add(currentId);
         visited.add(currentId);
 
-        // 如果当前顶点没有邻接顶点，或者所有邻接顶点都已经访问过，则当前路径是一条完整的路径，加入到allPaths中
         // If the current vertex has no neighbouring vertices, or if all neighbouring vertices have been visited,
         // then the current path is a complete path and is added to allPaths
         if (!adjList.containsKey(currentId) || adjList.get(currentId).isEmpty()) {
             allPaths.add(new ArrayList<>(currentPath));
         } else {
-            // 对于每个邻接顶点，如果它还没有被访问过，就从它开始深度优先搜索
             // For each neighbouring vertex, if it has not already been visited, start a depth-first search from it
             for (GradoopId id : adjList.get(currentId)) {
                 if (!visited.contains(id)) {
@@ -297,7 +255,6 @@ public class GraphSearch {
             }
         }
 
-        // 回溯过程中，移除当前顶点
         // Remove the current vertex during backtracking
         currentPath.remove(currentId);
         visited.remove(currentId);

@@ -32,14 +32,14 @@ public class test {
         double durationInSeconds = (double) durationInNano / 1_000_000_000.0;
 
         System.out.println("minSup：" + i);
-        System.out.println("算法运行时间（秒）：" + durationInSeconds);
+        System.out.println("Algorithm running time (seconds):" + durationInSeconds);
 
         for (Map.Entry<Integer, LogicalGraph> entry : frequentSubGraph.entrySet()) {
             if (entry.getValue().getEdges().count() > cnt) {
                 cnt = entry.getValue().getEdges().count();
             }
         }
-        System.out.println("频繁子图数量 ：" + cnt);
+        System.out.println("Number of frequent subgraphs:" + cnt);
         cnt = 0;
        // }
     }

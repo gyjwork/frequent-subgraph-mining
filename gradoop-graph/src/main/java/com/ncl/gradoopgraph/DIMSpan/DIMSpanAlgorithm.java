@@ -39,5 +39,26 @@ public class DIMSpanAlgorithm {
         return frequentSubgraphs;
     }
 
+    public static DataSet<GraphTransaction> runDIMSpanAlgorithm(LogicalGraph inputGraph, float minSupport, boolean directed) throws Exception {
+
+        GraphCollection inputGraphCollection = inputGraph.getConfig().getGraphCollectionFactory().fromDataSets(inputGraph.getGraphHead(), inputGraph.getVertices(), inputGraph.getEdges());
+
+        // Set the DIMSpan algorithm parameters
+        DIMSpanConfig dimSpanConfig = new DIMSpanConfig(minSupport, directed);
+
+        // Create an instance of the DIMSpan algorithm
+        DIMSpan dimSpan = new DIMSpan(dimSpanConfig);
+
+        // Convert GraphCollection to DataSet<LabeledGraphStringString>
+        DataSet<LabeledGraphStringString> inputDataSet = inputGraphCollection
+                .getGraphTransactions()
+                .map(new EPGMGraphTransactionToLabeledGraph());
+
+        // Perform frequent subgraph mining
+        DataSet<GraphTransaction> frequentSubgraphs = dimSpan.execute(inputDataSet);
+
+        return frequentSubgraphs;
+    }
+
 
 }

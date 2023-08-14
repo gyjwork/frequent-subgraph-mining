@@ -1,20 +1,3 @@
-本代码的主要目标是提供一种方法，对逻辑图进行转换和拆分。
-
-首先，代码定义了一个静态的边类型信息映射，对边的标签进行编码，并定义了其优先级和方向性。
-然后，通过 transformGraph 方法将输入的逻辑图进行转换。转换过程主要包括两个步骤，生成新的顶点和生成新的边。
-
-在生成新顶点的过程中，输入逻辑图中的源顶点和目标顶点被合并，并生成一个新的顶点。新顶点的属性由源顶点和目标顶点的属性以及边的属性组合而成。
-此外，新顶点的ID是随机生成的，而标签则取自边的标签。
-
-在生成新边的过程中，首先根据源顶点的ID将新顶点分类。然后，根据时间戳和优先级对每个类别的新顶点进行排序。最后，基于相邻的新顶点创建新的边。
-
-通过以上步骤，生成了转换后的逻辑图。接着，通过 splitGraphByChainId 方法将转换后的逻辑图拆分为多个子图。
-
-每个子图都基于边的 chainId 属性进行分组。即，具有相同 chainId 属性的边和相应的顶点将组成一个子图。
-
-
-
-
 The main goal of this code is to provide a way to transform and split logic graphs.
 
 First, the code defines a static edge type information map, which encodes the label of the edge and defines its priority and directionality.
